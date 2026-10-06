@@ -5,7 +5,7 @@ W=$HOME/.workflow
 [ -d "$W" ] || git clone -q https://github.com/BlueMeridian4/workflow "$W"
 git -C "$W" pull -q --ff-only || echo "note: could not update $W"
 
-line='[ -f ~/.workflow/aliases.sh ] && . ~/.workflow/aliases.sh'
+line='[ -f ~/.workflow/env.sh ] && . ~/.workflow/env.sh'
 for rc in "$HOME/.bash_aliases" "$HOME/.zshrc"; do
   # always create .bash_aliases (Ubuntu's .bashrc sources it); only touch .zshrc if it exists
   [ "$rc" = "$HOME/.bash_aliases" ] || [ -f "$rc" ] || continue
@@ -21,6 +21,6 @@ fi
 command -v node >/dev/null || echo "note: install Node.js, log.js needs it"
 command -v wmctrl >/dev/null || [ "$(uname)" != Linux ] || echo "note: sudo apt install wmctrl for the open-windows snapshot"
 
-echo "Open a new shell, then run wf-help:"
+echo "Open a new shell, then run wf help:"
 echo
 cat "$W/help.txt"
