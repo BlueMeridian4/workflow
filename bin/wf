@@ -1,20 +1,61 @@
 #!/usr/bin/env node
 // wf <command> [args]. Single entry point; same on Linux/Mac/Windows. `wf help` lists commands.
-const fs = require('fs'), path = require('path');
-const { spawnSync } = require('child_process');
+const fs = require('fs'), os = require('os'), path = require('path');
+const { spawn, spawnSync } = require('child_process');
 
 const root = path.join(__dirname, '..');
-const claude = ['go', 'research', 'plan', 'lint', 'lean', 'review', 'ship']; // each runs /workflow:<name>
+const win = process.platform === 'win32';
 const logjs = { log: [], decide: ['--decide'], pr: ['--review'], find: ['--find'], board: ['--board'], ctx: ['--session'] }; // wf command -> log.js flag
+// Read-only Claude commands run headless in the background (allowed tools listed); results land on the board or in a log.
+const readonly = {
+  review: 'Bash(gh pr view:*) Bash(gh pr diff:*) Bash(git diff:*) Bash(git log:*) Bash(git show:*) Bash(git fetch:*) Bash(git status:*) Bash(wf:*) Read Grep Glob Skill Agent',
+  research: 'WebSearch WebFetch Bash(wf:*) Read Grep Glob',
+  plan: 'Read Grep Glob',
+};
+const interactive = ['go', 'lint', 'lean', 'ship']; // change files or push: open in a new terminal window
 const [cmd = 'help', ...args] = process.argv.slice(2);
-const run = (c, a) => process.exit(spawnSync(c, a, { stdio: 'inherit', shell: process.platform === 'win32' }).status ?? 1);
+const run = (c, a) => process.exit(spawnSync(c, a, { stdio: 'inherit', shell: win }).status ?? 1);
 const help = () => process.stdout.write(fs.readFileSync(path.join(root, 'help.txt'), 'utf8'));
+const prompt = (c, a) => `/workflow:${c} ${a.join(' ')}`.trim();
+const where = (c) => spawnSync(win ? 'where' : 'which', [c], { encoding: 'utf8' }).stdout?.split('\n')[0].trim();
+const q = (s) => `'${s.replace(/'/g, `'\\''`)}'`;
 
-if (cmd === 'commands') console.log(['help', ...Object.keys(logjs), ...claude].join(' ')); // used by shell completion
+function background(c) {
+  const log = path.join(os.homedir(), '.claude', 'workflow', `last-${c}.log`);
+  fs.mkdirSync(path.dirname(log), { recursive: true });
+  spawn(process.execPath, [__filename, '__bg', c, log, ...args], { detached: true, stdio: 'ignore' }).unref();
+  console.log(`wf ${c}: running in the background. Output: ${log}`);
+}
+
+function notify(title, body) { // ponytail: Linux/Mac only, Windows just skips the toast
+  if (process.platform === 'darwin') spawnSync('osascript', ['-e', `display notification ${JSON.stringify(body)} with title ${JSON.stringify(title)}`]);
+  else if (!win) spawnSync('notify-send', [title, body]);
+}
+
+function terminal(c) { // ponytail: Mac/Windows branches untested
+  const bin = where('claude') || 'claude', cwd = process.cwd(), p = prompt(c, args);
+  const script = 'cd "$3"; "$1" "$2"; exec bash', tail = ['bash', '-c', script, '_', bin, p, cwd];
+  let t, a;
+  if (process.platform === 'darwin') [t, a] = ['osascript', ['-e', `tell application "Terminal" to do script ${JSON.stringify(`cd ${q(cwd)} && ${q(bin)} ${q(p)}`)}`]];
+  else if (win) [t, a] = ['cmd', ['/c', 'start', '', 'cmd', '/k', bin, p]];
+  else {
+    t = ['gnome-terminal', 'x-terminal-emulator', 'kitty', 'xterm'].find(where);
+    a = t === 'gnome-terminal' ? ['--', ...tail] : t === 'kitty' ? tail : ['-e', ...tail];
+  }
+  if (!t) { console.error('wf: no terminal emulator found; running here instead'); run('claude', [p]); }
+  spawn(t, a, { detached: true, stdio: 'ignore' }).unref();
+  console.log(`wf ${c}: opened in a new terminal window`);
+}
+
+if (cmd === 'commands') console.log(['help', ...Object.keys(logjs), ...interactive, ...Object.keys(readonly)].join(' ')); // used by shell completion
 else if (cmd === 'help' || cmd === '-h' || cmd === '--help') help();
 else if (logjs[cmd]) run('node', [path.join(root, 'log.js'), ...logjs[cmd], ...args]);
-else if (claude.includes(cmd)) {
+else if (readonly[cmd]) {
   if (cmd === 'research') spawnSync('node', [path.join(root, 'log.js'), '--board', '--research'], { stdio: 'ignore' }); // show where findings will land
-  run('claude', [`/workflow:${cmd} ${args.join(' ')}`.trim()]);
-}
-else { console.error(`wf: unknown command "${cmd}"\n`); help(); process.exit(1); }
+  background(cmd);
+} else if (interactive.includes(cmd)) terminal(cmd);
+else if (cmd === '__bg') { // internal: run headless claude, log output, notify when done
+  const [c, log, ...a] = args, fd = fs.openSync(log, 'w');
+  const r = spawnSync('claude', ['-p', prompt(c, a), '--allowedTools', readonly[c]], { stdio: ['ignore', fd, fd], shell: win });
+  notify(`wf ${c} ${r.status ? 'failed' : 'finished'}`, log);
+} else { console.error(`wf: unknown command "${cmd}"\n`); help(); process.exit(1); }

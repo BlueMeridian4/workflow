@@ -17,7 +17,7 @@ After each meaningful change run `node ~/.workflow/log.js "<one-line summary, <1
 Window snapshot: Linux `wmctrl` (X11), Mac `osascript`, Windows PowerShell. Mac/Windows untested. If it fails the log still works.
 
 ## Commands
-One command, `wf`: `wf help`, `log`, `decide`, `board`, `ctx`, `go`, `plan`, `lint`, `lean`, `review [PR#]`, `ship` (source of the list: `help.txt`). In Claude Code the same tasks are `/workflow:go` etc. `lint` and `ship` run on a Haiku sub-agent to save tokens; `review` and `ship` never merge. Windows: add `%USERPROFILE%\.workflow\bin` to PATH (`wf.cmd` is included; untested).
+One command, `wf`: `wf help`, `log`, `decide`, `board`, `ctx`, `go`, `plan`, `lint`, `lean`, `review [PR#]`, `ship` (source of the list: `help.txt`). In Claude Code the same tasks are `/workflow:go` etc. `review`, `research` and `plan` run in the background (results go to the board or `~/.claude/workflow/last-<cmd>.log`, plus a desktop notification); `go`, `lint`, `lean` and `ship` open a new terminal window. Your own terminal is never taken over. `lint` and `ship` run on a Haiku sub-agent to save tokens; `review` and `ship` never merge. Windows: add `%USERPROFILE%\.workflow\bin` to PATH (`wf.cmd` is included; untested).
 
 **Auto-fix hook:** after every Edit/Write the plugin runs `ruff --fix` (.py), `eslint --fix` (.js/.ts, if the project has eslint installed) or `shellcheck` (.sh) on that file and hands unfixable errors straight back to Claude.
 
