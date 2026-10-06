@@ -13,5 +13,8 @@ const help = () => process.stdout.write(fs.readFileSync(path.join(root, 'help.tx
 if (cmd === 'commands') console.log(['help', ...Object.keys(logjs), ...claude].join(' ')); // used by shell completion
 else if (cmd === 'help' || cmd === '-h' || cmd === '--help') help();
 else if (logjs[cmd]) run('node', [path.join(root, 'log.js'), ...logjs[cmd], ...args]);
-else if (claude.includes(cmd)) run('claude', [`/workflow:${cmd} ${args.join(' ')}`.trim()]);
+else if (claude.includes(cmd)) {
+  if (cmd === 'research') spawnSync('node', [path.join(root, 'log.js'), '--board', '--research'], { stdio: 'ignore' }); // show where findings will land
+  run('claude', [`/workflow:${cmd} ${args.join(' ')}`.trim()]);
+}
 else { console.error(`wf: unknown command "${cmd}"\n`); help(); process.exit(1); }
