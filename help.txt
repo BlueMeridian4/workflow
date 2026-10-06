@@ -2,6 +2,8 @@ wf <command> [args]   (Claude commands start a session with the task preloaded; 
 
   wf help          show this list
   wf log "msg"     log a change to this project's context   (any AI tool)
+  wf decide "choice" "benefit" "cost"   record a decision with its tradeoff
+  wf board         open the floating decisions window (auto-refreshes; leave it on a side monitor)
   wf ctx           print this project's context              (any AI tool)
   wf go            resume where you left off
   wf plan [file]   check a plan against .claude/rules.md before coding

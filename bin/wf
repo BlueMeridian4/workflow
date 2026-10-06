@@ -5,13 +5,15 @@ const { spawnSync } = require('child_process');
 
 const root = path.join(__dirname, '..');
 const claude = ['go', 'plan', 'lint', 'lean', 'review', 'ship']; // each runs /workflow:<name>
-const commands = ['help', 'log', 'ctx', ...claude];
+const commands = ['help', 'log', 'decide', 'board', 'ctx', ...claude];
 const [cmd = 'help', ...args] = process.argv.slice(2);
 const run = (c, a) => process.exit(spawnSync(c, a, { stdio: 'inherit', shell: process.platform === 'win32' }).status ?? 1);
 
 if (cmd === 'commands') console.log(commands.join(' ')); // used by shell completion
 else if (cmd === 'help' || cmd === '-h' || cmd === '--help') process.stdout.write(fs.readFileSync(path.join(root, 'help.txt'), 'utf8'));
 else if (cmd === 'log') run('node', [path.join(root, 'log.js'), ...args]);
+else if (cmd === 'decide') run('node', [path.join(root, 'log.js'), '--decide', ...args]);
+else if (cmd === 'board') run('node', [path.join(root, 'log.js'), '--board']);
 else if (cmd === 'ctx') run('node', [path.join(root, 'log.js'), '--session']);
 else if (claude.includes(cmd)) run('claude', [`/workflow:${cmd} ${args.join(' ')}`.trim()]);
 else { console.error(`wf: unknown command "${cmd}"\n`); process.stdout.write(fs.readFileSync(path.join(root, 'help.txt'), 'utf8')); process.exit(1); }
