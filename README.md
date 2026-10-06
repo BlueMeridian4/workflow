@@ -1,11 +1,11 @@
 # workflow
 Per-project context for AI-assisted engineering: open windows plus the last 20 changes, in one capped markdown file (~38 lines, oldest dropped). One dependency-free file, `log.js` (Node), on Linux/Mac/Windows. Context lives in `~/.claude/workflow/<project>.md`, outside repos, never committed.
 
-## Claude Code (auto-loaded every session, any repo)
+## Install (new device)
 ```
-/plugin marketplace add BlueMeridian4/workflow
-/plugin install workflow@workflow
+git clone https://github.com/BlueMeridian4/workflow ~/.workflow && ~/.workflow/install.sh
 ```
+Idempotent. It adds shell shortcuts (`wl`, `wctx`, `wgo`, `wlint`, `wlean`, `wreview`, `wship`) to `~/.bash_aliases` and `~/.zshrc`, and installs the Claude Code plugin (auto-loads context every session, any repo). Windows: use Git Bash or WSL for now.
 
 ## Any other AI tool (Cursor, Codex, Gemini CLI, ...)
 Clone to `~/.workflow`, then paste into the repo's `AGENTS.md` (or that tool's rules file):
