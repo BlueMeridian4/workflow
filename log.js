@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Usage: log.js "what changed" | log.js (refresh) | log.js --session (hook: refresh + print)
-//        log.js --decide "choice" "benefit" "cost" | log.js --review "PR" "tldr" "flag" | log.js --find "name" "what" "url" "take" | log.js --board [path] (open the floating window)
+//        log.js --decide "choice" "benefit" "cost" | log.js --review "PR" "tldr" "flag" | log.js --find "name" "what" "url" "take" | log.js --board [--research] [path] (open the floating window)
 // Context lives outside the repo (~/.claude/workflow/<project>.md): per-project, never committed.
 const fs = require('fs'), os = require('os'), path = require('path');
 const { execSync, spawn } = require('child_process');
@@ -59,15 +59,15 @@ const PAGE = `<!doctype html><meta charset=utf-8><meta name=viewport content="wi
 <style>:root{--bg:#fff;--fg:#1a1a1a;--dim:#767676;--line:#e2e2e2;--g:#1a7f37;--r:#b42318}
 @media(prefers-color-scheme:dark){:root{--bg:#161616;--fg:#e8e8e8;--dim:#8a8a8a;--line:#2e2e2e;--g:#56d364;--r:#ff7b72}}
 *{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font:14px/1.4 system-ui;margin:0;height:100vh;display:flex;flex-direction:column}
-section{padding:10px 14px;overflow:auto}#d,#r{min-height:12vh;resize:vertical;border-bottom:3px double var(--line)}#d{height:34vh}#r{height:30vh}#x{flex:1}
+section{padding:10px 14px;overflow:auto}#d{height:50vh;min-height:20vh;resize:vertical;border-bottom:3px double var(--line)}#r,#x{flex:1}body[data-v=research] #d,body[data-v=research] #r,body[data-v=board] #x{display:none}
 h2{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:0 0 8px;font-weight:600}
 .i{padding:6px 0;border-bottom:1px solid var(--line)}.i:last-child{border:0}.i b{font-weight:600}.t{color:var(--dim);font-size:12px;margin-left:6px}
 .g{color:var(--g)}.r{color:var(--r)}.s{color:var(--dim)}p{margin:2px 0}summary{cursor:pointer;list-style:none}a{color:inherit;text-decoration:none;border-bottom:1px dotted var(--dim)}details p{margin-left:2px}</style>
 <section id=d></section><section id=r></section><section id=x></section>
 <script>
 const e=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
-let last='';
-function draw(b){const k=JSON.stringify(b);if(k===last)return;last=k;document.title=b.name+' board';
+let last='';const v=new URLSearchParams(location.search).get('view')||'board';document.body.dataset.v=v;
+function draw(b){const k=JSON.stringify(b);if(k===last)return;last=k;document.title=b.name+' '+v;
 const open=new Set([...document.querySelectorAll('details[open]')].map(x=>x.id));
 d.innerHTML='<h2>Decisions</h2>'+([...b.decisions].reverse().map(x=>'<div class=i><b>'+e(x.what)+'</b><span class=t>'+e(x.t)+'</span>'+(x.benefit?'<p class=g>+ '+e(x.benefit)+'</p>':'')+(x.cost?'<p class=r>&minus; '+e(x.cost)+'</p>':'')+'</div>').join('')||'<p class=s>None yet</p>');
 r.innerHTML='<h2>Review</h2>'+([...b.reviews].reverse().map((x,n)=>{const id='r'+x.t+x.ref;return '<details class=i id="'+e(id)+'"'+(open.has(id)?' open':'')+'><summary><b>'+e(x.ref)+'</b><span class=t>'+e(x.t)+'</span><p>'+e(x.tldr)+'</p></summary>'+(x.flag?'<p class=r>'+e(x.flag)+'</p>':'<p class=g>No flags</p>')+'</details>'}).join('')||'<p class=s>None yet</p>');
@@ -76,7 +76,8 @@ function poll(){const s=document.createElement('script');s.src='DATA.JS?'+Date.n
 poll();setInterval(poll,3000);
 </script>`;
 
-function open(arg) {
+function open(argv) {
+  const view = argv.includes("--research") ? 'research' : 'board', arg = argv.find((x) => !x.startsWith('--'));
   if (arg) { const r = path.resolve(arg); use(sh(`git -C ${JSON.stringify(r)} rev-parse --show-toplevel`).trim() || r); }
   else if (!detected) { // not in a project: fall back to the most recently updated one
     try {
@@ -85,9 +86,9 @@ function open(arg) {
     } catch { /* no projects yet: empty board for cwd */ }
   }
   board();
-  const page = base + '.html', w = process.platform === 'win32';
+  const page = `file://${base}.html?view=${view}`, w = process.platform === 'win32';
   const chrome = ['google-chrome', 'chromium', 'chromium-browser'].find((c) => sh(`command -v ${c}`).trim());
-  const [cmd, args] = chrome ? [chrome, [`--app=file://${page}`, '--window-size=420,700']]
+  const [cmd, args] = chrome ? [chrome, [`--app=${page}`, '--window-size=420,700']]
     : w ? ['cmd', ['/c', 'start', '', page]] : [process.platform === 'darwin' ? 'open' : 'xdg-open', [page]];
   spawn(cmd, args, { detached: true, stdio: 'ignore' }).unref();
   console.log(`${root}\n${page}`);
@@ -98,5 +99,5 @@ if (a === '--session') console.log(`## workflow context for this project (auto-l
 else if (a === '--decide') decide(...process.argv.slice(3, 6));
 else if (a === '--review') review(...process.argv.slice(3, 6));
 else if (a === '--find') find(...process.argv.slice(3, 7));
-else if (a === '--board') open(process.argv[3]);
+else if (a === '--board') open(process.argv.slice(3));
 else update(a);
