@@ -10,7 +10,7 @@ grep -qs 'workflow/log.sh' CLAUDE.md || cat >> CLAUDE.md <<RULES
 
 # Workflow context
 - At session start, read \`CONTEXT.md\` (open apps + recent changes).
-- After each meaningful change, run \`$W/log.sh "<one-line summary, <100 chars>"\`.
+- After each meaningful change, run \`~/.workflow/log.sh "<one-line summary, <100 chars>"\`.
 - Never hand-edit CONTEXT.md; the script caps its length.
 RULES
 # CONTEXT.md holds window titles (mail subjects etc.), keep it out of git
