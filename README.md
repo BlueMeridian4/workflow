@@ -17,4 +17,8 @@ After each meaningful change run `node ~/.workflow/log.js "<one-line summary, <1
 Window snapshot: Linux `wmctrl` (X11), Mac `osascript`, Windows PowerShell. Mac/Windows untested. If it fails the log still works.
 
 ## Shortcuts (Claude Code)
-Type less, steer more: `/workflow:go` resume work, `/workflow:lint` fix linters, `/workflow:lean` slim the diff with ponytail, `/workflow:review [PR#]` review before merging, `/workflow:ship` lint + commit + PR. Each takes optional extra text. `/workflow:review` and `/workflow:ship` never merge.
+Type less, steer more: `/workflow:go` resume work, `/workflow:lint` fix linters, `/workflow:lean` slim the diff with ponytail, `/workflow:review [PR#]` review before merging, `/workflow:ship` lint + commit + PR, `/workflow:plan [file]` check a plan against your rules before coding. `lint` and `ship` run on a Haiku sub-agent to save tokens. Each takes optional extra text. `/workflow:review` and `/workflow:ship` never merge.
+
+**Auto-fix hook:** after every Edit/Write the plugin runs `ruff --fix` (.py), `eslint --fix` (.js/.ts, if the project has eslint installed) or `shellcheck` (.sh) on that file and hands unfixable errors straight back to Claude.
+
+**Rules:** copy `templates/rules.md` to `.claude/rules.md` in a repo and fill it in; `/workflow:plan` checks plans against it.
