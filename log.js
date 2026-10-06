@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Usage: log.js "what changed" | log.js (refresh) | log.js --session (hook: refresh + print)
-//        log.js --decide "choice" "benefit" "cost" | log.js --review "PR" "tldr" "flag" | log.js --board (open the floating window)
+//        log.js --decide "choice" "benefit" "cost" | log.js --review "PR" "tldr" "flag" | log.js --board [path] (open the floating window)
 // Context lives outside the repo (~/.claude/workflow/<project>.md): per-project, never committed.
 const fs = require('fs'), os = require('os'), path = require('path');
 const { execSync, spawn } = require('child_process');
@@ -10,9 +10,11 @@ const MAX_DEC = 15; // hard cap on decisions kept
 const MAX_REV = 10; // hard cap on review summaries kept
 const sh = (c) => { try { return execSync(c, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }); } catch { return ''; } };
 
-const root = process.env.CLAUDE_PROJECT_DIR || sh('git rev-parse --show-toplevel').trim() || process.cwd();
-const base = path.join(os.homedir(), '.claude', 'workflow', root.replace(/[\\/:]/g, '-'));
-const file = base + '.md';
+const home = path.join(os.homedir(), '.claude', 'workflow');
+const detected = process.env.CLAUDE_PROJECT_DIR || sh('git rev-parse --show-toplevel').trim();
+let root, base, file;
+const use = (r) => { root = r; base = path.join(home, r.replace(/[\\/:]/g, '-')); file = base + '.md'; };
+use(detected || process.cwd());
 
 // ponytail: window titles only (active browser tab, not all tabs); Mac/Windows commands untested
 function windows() {
@@ -71,19 +73,26 @@ function poll(){const s=document.createElement('script');s.src='DATA.JS?'+Date.n
 poll();setInterval(poll,3000);
 </script>`;
 
-function open() {
+function open(arg) {
+  if (arg) { const r = path.resolve(arg); use(sh(`git -C ${JSON.stringify(r)} rev-parse --show-toplevel`).trim() || r); }
+  else if (!detected) { // not in a project: fall back to the most recently updated one
+    try {
+      const md = fs.readdirSync(home).filter((f) => f.endsWith('.md')).map((f) => path.join(home, f)).sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs)[0];
+      use(fs.readFileSync(md, 'utf8').match(/^# Context: (.*) \(~/)[1]);
+    } catch { /* no projects yet: empty board for cwd */ }
+  }
   board();
   const page = base + '.html', w = process.platform === 'win32';
   const chrome = ['google-chrome', 'chromium', 'chromium-browser'].find((c) => sh(`command -v ${c}`).trim());
   const [cmd, args] = chrome ? [chrome, [`--app=file://${page}`, '--window-size=420,700']]
     : w ? ['cmd', ['/c', 'start', '', page]] : [process.platform === 'darwin' ? 'open' : 'xdg-open', [page]];
   spawn(cmd, args, { detached: true, stdio: 'ignore' }).unref();
-  console.log(page);
+  console.log(`${root}\n${page}`);
 }
 
 const a = process.argv[2];
 if (a === '--session') console.log(`## workflow context for this project (auto-loaded; do not hand-edit)\n${update()}Rules: after each meaningful change, run \`node "${__filename}" "<one-line summary, <100 chars>"\`. For each non-trivial choice (library, approach, tradeoff), run \`node "${__filename}" --decide "<choice>" "<benefit>" "<cost>"\` (each <80 chars); the user watches these in a floating window.`);
 else if (a === '--decide') decide(...process.argv.slice(3, 6));
 else if (a === '--review') review(...process.argv.slice(3, 6));
-else if (a === '--board') open();
+else if (a === '--board') open(process.argv[3]);
 else update(a);
