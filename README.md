@@ -15,3 +15,6 @@ After each meaningful change run `node ~/.workflow/log.js "<one-line summary, <1
 ```
 
 Window snapshot: Linux `wmctrl` (X11), Mac `osascript`, Windows PowerShell. Mac/Windows untested. If it fails the log still works.
+
+## Shortcuts (Claude Code)
+Type less, steer more: `/workflow:go` resume work, `/workflow:lint` fix linters, `/workflow:lean` slim the diff with ponytail, `/workflow:review [PR#]` review before merging, `/workflow:ship` lint + commit + PR. Each takes optional extra text. `/workflow:review` and `/workflow:ship` never merge.
