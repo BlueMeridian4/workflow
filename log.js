@@ -15,7 +15,9 @@ const home = path.join(os.homedir(), '.claude', 'workflow');
 fs.mkdirSync(home, { recursive: true });
 const detected = process.env.CLAUDE_PROJECT_DIR || sh('git rev-parse --show-toplevel').trim();
 let root, base, file;
-const use = (r) => { root = r; base = path.join(home, r.replace(/[\\/:]/g, '-')); file = base + '.md'; };
+// Key by git remote (credentials stripped) so every clone/worktree of one repo shares context; no remote -> folder path.
+const remote = (r) => sh(`git -C ${JSON.stringify(r)} remote get-url origin`).trim().replace(/^[a-z+]+:\/\//, '').replace(/^[^@/]*@/, '').replace(':', '/').replace(/\.git$/, '').toLowerCase();
+const use = (r) => { root = r; base = path.join(home, (remote(r) || r).replace(/[\\/:]/g, '-')); file = base + '.md'; };
 use(detected || process.cwd());
 
 // ponytail: window titles only (active browser tab, not all tabs); Mac/Windows commands untested
