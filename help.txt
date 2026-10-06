@@ -1,0 +1,14 @@
+wf <command> [args]   (Claude commands start a session with the task preloaded; extra words are passed along)
+
+  wf help          show this list
+  wf log "msg"     log a change to this project's context   (any AI tool)
+  wf ctx           print this project's context              (any AI tool)
+  wf go            resume where you left off
+  wf plan [file]   check a plan against .claude/rules.md before coding
+  wf lint          run linters and fix errors
+  wf lean          slim the current diff (ponytail)
+  wf review [PR#]  review a PR or branch; never merges
+  wf ship          lint, commit, push, open a PR; never merges
+
+Inside Claude Code the same tasks are /workflow:go, :plan, :lint, :lean, :review, :ship.
+Update: git -C ~/.workflow pull

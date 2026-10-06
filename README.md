@@ -1,11 +1,11 @@
 # workflow
 Per-project context for AI-assisted engineering: open windows plus the last 20 changes, in one capped markdown file (~38 lines, oldest dropped). One dependency-free file, `log.js` (Node), on Linux/Mac/Windows. Context lives in `~/.claude/workflow/<project>.md`, outside repos, never committed.
 
-## Claude Code (auto-loaded every session, any repo)
+## Install (new device)
 ```
-/plugin marketplace add BlueMeridian4/workflow
-/plugin install workflow@workflow
+git clone https://github.com/BlueMeridian4/workflow ~/.workflow && ~/.workflow/install.sh
 ```
+Idempotent. It puts the `wf` command on your PATH (via `~/.bash_aliases` and `~/.zshrc`, with Tab completion; run `wf help`), and installs the Claude Code plugin (auto-loads context every session, any repo). Windows: use Git Bash or WSL for now.
 
 ## Any other AI tool (Cursor, Codex, Gemini CLI, ...)
 Clone to `~/.workflow`, then paste into the repo's `AGENTS.md` (or that tool's rules file):
@@ -15,3 +15,10 @@ After each meaningful change run `node ~/.workflow/log.js "<one-line summary, <1
 ```
 
 Window snapshot: Linux `wmctrl` (X11), Mac `osascript`, Windows PowerShell. Mac/Windows untested. If it fails the log still works.
+
+## Commands
+One command, `wf`: `wf help`, `log`, `ctx`, `go`, `plan`, `lint`, `lean`, `review [PR#]`, `ship` (source of the list: `help.txt`). In Claude Code the same tasks are `/workflow:go` etc. `lint` and `ship` run on a Haiku sub-agent to save tokens; `review` and `ship` never merge. Windows: add `%USERPROFILE%\.workflow\bin` to PATH (`wf.cmd` is included; untested).
+
+**Auto-fix hook:** after every Edit/Write the plugin runs `ruff --fix` (.py), `eslint --fix` (.js/.ts, if the project has eslint installed) or `shellcheck` (.sh) on that file and hands unfixable errors straight back to Claude.
+
+**Rules:** copy `templates/rules.md` to `.claude/rules.md` in a repo and fill it in; `/workflow:plan` checks plans against it.
