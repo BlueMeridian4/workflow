@@ -1,6 +1,9 @@
 # workflow
-Low-setup context tracking for me + AI assistants. `./log.sh "msg"` rewrites `CONTEXT.md`: a snapshot of open windows plus the last 20 changes (hard cap, oldest dropped), so an AI catches up in ~40 lines. `CLAUDE.md` tells Claude Code to read and update it.
+Claude Code plugin (same shape as ponytail). Every session start it loads a small per-project context: open windows plus the last 20 changes. Claude is told to run `log.sh "summary"` after each change. Hard-capped (~38 lines), oldest entries dropped.
 
-Needs `wmctrl` (X11). Track another repo: `CONTEXT=/path/CONTEXT.md ./log.sh "msg"`.
-
-**New device/repo:** `gh repo clone BlueMeridian4/workflow ~/.workflow`, then run `~/.workflow/bootstrap.sh` inside any repo. It adds the rules to that repo's `CLAUDE.md`, gitignores `CONTEXT.md` (it contains window titles), and logs once. Safe to re-run.
+Install once per device, works in every repo with no per-repo setup:
+```
+/plugin marketplace add BlueMeridian4/workflow
+/plugin install workflow@workflow
+```
+Context lives in `~/.claude/workflow/<project>.md` (outside repos, never committed). Needs `wmctrl` (X11) for the window snapshot; without it the log still works.

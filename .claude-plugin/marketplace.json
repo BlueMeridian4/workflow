@@ -1,0 +1,9 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "workflow",
+  "description": "Low-setup context tracking for AI-assisted engineering.",
+  "owner": { "name": "BlueMeridian4", "url": "https://github.com/BlueMeridian4" },
+  "plugins": [
+    { "name": "workflow", "description": "Capped per-project context log loaded every session.", "source": "./", "category": "productivity" }
+  ]
+}

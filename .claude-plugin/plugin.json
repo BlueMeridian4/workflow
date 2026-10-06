@@ -1,0 +1,6 @@
+{
+  "name": "workflow",
+  "version": "0.1.0",
+  "description": "Per-project context log: open windows + last 20 changes, auto-loaded each session, hard length cap.",
+  "author": { "name": "BlueMeridian4", "url": "https://github.com/BlueMeridian4" }
+}
