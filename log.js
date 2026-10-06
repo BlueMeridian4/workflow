@@ -21,7 +21,7 @@ function windows() {
 
 function update(msg) {
   let old = [];
-  try { old = fs.readFileSync(file, 'utf8').split('## Log')[1].split('\n').filter((l) => l.startsWith('- ')); } catch {}
+  try { old = fs.readFileSync(file, 'utf8').split('## Log')[1].split('\n').filter((l) => l.startsWith("- ")); } catch { /* first run, no file yet */ }
   if (msg) { const d = new Date(), z = (n) => String(n).padStart(2, '0'); old.push(`- ${z(d.getMonth() + 1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())} ${msg}`); }
   const text = [`# Context: ${root} (~${MAX_LOG + MAX_WIN + 3} lines max)`, `## Open now (${new Date().toLocaleString("sv").slice(0, 16)}, ${os.hostname()})`,
     ...windows().map((w) => '- ' + w), '## Log', ...old.slice(-MAX_LOG)].join('\n') + '\n';
