@@ -3,6 +3,7 @@ wf <command> [args]   (Claude commands start a session with the task preloaded; 
   wf help          show this list
   wf log "msg"     log a change to this project's context   (any AI tool)
   wf decide "choice" "benefit" "cost"   record a decision with its tradeoff
+  wf pr "ref" "tldr" "flag"           add a review summary to the board (Claude does this after wf review)
   wf board         open the floating decisions window (auto-refreshes; leave it on a side monitor)
   wf ctx           print this project's context              (any AI tool)
   wf go            resume where you left off

@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 // Usage: log.js "what changed" | log.js (refresh) | log.js --session (hook: refresh + print)
-//        log.js --decide "choice" "benefit" "cost" | log.js --board (open the floating decisions window)
+//        log.js --decide "choice" "benefit" "cost" | log.js --review "PR" "tldr" "flag" | log.js --board (open the floating window)
 // Context lives outside the repo (~/.claude/workflow/<project>.md): per-project, never committed.
 const fs = require('fs'), os = require('os'), path = require('path');
 const { execSync, spawn } = require('child_process');
 const MAX_LOG = 20; // hard cap on log entries; oldest dropped
 const MAX_WIN = 15; // hard cap on windows listed
 const MAX_DEC = 15; // hard cap on decisions kept
+const MAX_REV = 10; // hard cap on review summaries kept
 const sh = (c) => { try { return execSync(c, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }); } catch { return ''; } };
 
 const root = process.env.CLAUDE_PROJECT_DIR || sh('git rev-parse --show-toplevel').trim() || process.cwd();
@@ -34,26 +35,41 @@ function update(msg) {
   return text;
 }
 
-const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-const decisions = () => { try { return JSON.parse(fs.readFileSync(base + '.decisions.json', 'utf8')); } catch { return []; } };
-
-function decide(what, benefit = '', cost = '') {
-  const list = decisions().concat({ t: new Date().toLocaleString('sv').slice(5, 16), what, benefit, cost }).slice(-MAX_DEC);
+const read = (k) => { try { return JSON.parse(fs.readFileSync(`${base}.${k}.json`, 'utf8')); } catch { return []; } };
+function add(k, item, max) { // append to a capped list, then refresh the board
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(base + '.decisions.json', JSON.stringify(list));
+  fs.writeFileSync(`${base}.${k}.json`, JSON.stringify(read(k).concat({ t: new Date().toLocaleString('sv').slice(5, 16), ...item }).slice(-max)));
   board();
 }
+const decide = (what, benefit = '', cost = '') => add('decisions', { what, benefit, cost }, MAX_DEC);
+const review = (ref, tldr = '', flag = '') => add('reviews', { ref, tldr, flag }, MAX_REV);
 
-// Static page that refreshes itself; open it once (wf board) and leave the window floating.
+// Static page + data file. The page polls the data file (no reload), so scroll, pane size and expanded items survive.
 function board() {
-  let log = [];
-  try { log = fs.readFileSync(file, 'utf8').split('## Log')[1].split('\n').filter((l) => l.startsWith('- ')); } catch { /* no log yet */ }
-  const cards = decisions().reverse().map((d) => `<div class=c><b>${esc(d.what)}</b> <small>${d.t}</small>${d.benefit ? `<p class=g>+ ${esc(d.benefit)}</p>` : ''}${d.cost ? `<p class=r>&minus; ${esc(d.cost)}</p>` : ''}</div>`).join('') || '<p>No decisions yet.</p>';
-  fs.writeFileSync(base + '.html', `<!doctype html><meta charset=utf-8><meta http-equiv=refresh content=3><meta name=viewport content="width=device-width"><title>${esc(path.basename(root))} decisions</title>
-<style>:root{--bg:#fff;--fg:#1a1a1a;--card:#f3f3f3;--g:#1a7f37;--r:#b42318}@media(prefers-color-scheme:dark){:root{--bg:#161616;--fg:#e8e8e8;--card:#242424;--g:#56d364;--r:#ff7b72}}
-body{background:var(--bg);color:var(--fg);font:14px system-ui;margin:12px}.c{background:var(--card);border-radius:8px;padding:8px 12px;margin:8px 0}p{margin:4px 0}.g{color:var(--g)}.r{color:var(--r)}small,h4{opacity:.6}</style>
-<h3>${esc(path.basename(root))}: decisions</h3>${cards}<h4>Recent changes</h4>${log.slice(-8).reverse().map((l) => `<p>${esc(l.slice(2))}</p>`).join('')}`);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(base + '.board.js', 'window.BOARD=' + JSON.stringify({ name: path.basename(root), decisions: read('decisions'), reviews: read('reviews') }));
+  fs.writeFileSync(base + '.html', PAGE.replace('DATA.JS', path.basename(base) + '.board.js'));
 }
+
+const PAGE = `<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width"><title>board</title>
+<style>:root{--bg:#fff;--fg:#1a1a1a;--dim:#767676;--line:#e2e2e2;--g:#1a7f37;--r:#b42318}
+@media(prefers-color-scheme:dark){:root{--bg:#161616;--fg:#e8e8e8;--dim:#8a8a8a;--line:#2e2e2e;--g:#56d364;--r:#ff7b72}}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font:14px/1.4 system-ui;margin:0;height:100vh;display:flex;flex-direction:column}
+section{padding:10px 14px;overflow:auto}#d{height:50vh;min-height:20vh;resize:vertical;border-bottom:3px double var(--line)}#r{flex:1}
+h2{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:0 0 8px;font-weight:600}
+.i{padding:6px 0;border-bottom:1px solid var(--line)}.i:last-child{border:0}.i b{font-weight:600}.t{color:var(--dim);font-size:12px;margin-left:6px}
+.g{color:var(--g)}.r{color:var(--r)}.s{color:var(--dim)}p{margin:2px 0}summary{cursor:pointer;list-style:none}details p{margin-left:2px}</style>
+<section id=d></section><section id=r></section>
+<script>
+const e=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+let last='';
+function draw(b){const k=JSON.stringify(b);if(k===last)return;last=k;document.title=b.name+' board';
+const open=new Set([...document.querySelectorAll('details[open]')].map(x=>x.id));
+d.innerHTML='<h2>Decisions</h2>'+([...b.decisions].reverse().map(x=>'<div class=i><b>'+e(x.what)+'</b><span class=t>'+e(x.t)+'</span>'+(x.benefit?'<p class=g>+ '+e(x.benefit)+'</p>':'')+(x.cost?'<p class=r>&minus; '+e(x.cost)+'</p>':'')+'</div>').join('')||'<p class=s>None yet</p>');
+r.innerHTML='<h2>Review</h2>'+([...b.reviews].reverse().map((x,n)=>{const id='r'+x.t+x.ref;return '<details class=i id="'+e(id)+'"'+(open.has(id)?' open':'')+'><summary><b>'+e(x.ref)+'</b><span class=t>'+e(x.t)+'</span><p>'+e(x.tldr)+'</p></summary>'+(x.flag?'<p class=r>'+e(x.flag)+'</p>':'<p class=g>No flags</p>')+'</details>'}).join('')||'<p class=s>None yet</p>');}
+function poll(){const s=document.createElement('script');s.src='DATA.JS?'+Date.now();s.onload=()=>{draw(window.BOARD);s.remove()};s.onerror=()=>s.remove();document.head.append(s)}
+poll();setInterval(poll,3000);
+</script>`;
 
 function open() {
   board();
@@ -68,5 +84,6 @@ function open() {
 const a = process.argv[2];
 if (a === '--session') console.log(`## workflow context for this project (auto-loaded; do not hand-edit)\n${update()}Rules: after each meaningful change, run \`node "${__filename}" "<one-line summary, <100 chars>"\`. For each non-trivial choice (library, approach, tradeoff), run \`node "${__filename}" --decide "<choice>" "<benefit>" "<cost>"\` (each <80 chars); the user watches these in a floating window.`);
 else if (a === '--decide') decide(...process.argv.slice(3, 6));
+else if (a === '--review') review(...process.argv.slice(3, 6));
 else if (a === '--board') open();
 else update(a);
