@@ -1,9 +1,11 @@
 # shellcheck shell=bash
-# Workflow shortcuts. Sourced from your shell rc by install.sh (bash and zsh).
-wl()     { node ~/.workflow/log.js "$@"; }        # wl "did X": log a change
-wctx()   { node ~/.workflow/log.js --session; }   # print current context (any AI tool)
-wgo()    { claude "/workflow:go $*"; }
-wlint()  { claude "/workflow:lint $*"; }
-wlean()  { claude "/workflow:lean $*"; }
-wreview() { claude "/workflow:review $*"; }       # wreview 12
-wship()  { claude "/workflow:ship $*"; }
+# Workflow shortcuts (wf-*). Sourced from your shell rc by install.sh (bash and zsh). Run wf-help.
+wf-help()   { cat ~/.workflow/help.txt; }
+wf-log()    { node ~/.workflow/log.js "$@"; }        # wf-log "did X"
+wf-ctx()    { node ~/.workflow/log.js --session; }
+wf-go()     { claude "/workflow:go $*"; }
+wf-plan()   { claude "/workflow:plan $*"; }
+wf-lint()   { claude "/workflow:lint $*"; }
+wf-lean()   { claude "/workflow:lean $*"; }
+wf-review() { claude "/workflow:review $*"; }        # wf-review 12
+wf-ship()   { claude "/workflow:ship $*"; }

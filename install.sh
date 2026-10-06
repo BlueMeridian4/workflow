@@ -21,10 +21,6 @@ fi
 command -v node >/dev/null || echo "note: install Node.js, log.js needs it"
 command -v wmctrl >/dev/null || [ "$(uname)" != Linux ] || echo "note: sudo apt install wmctrl for the open-windows snapshot"
 
-cat <<MSG
-Open a new shell, then:
-  wl "msg"   log a change          wctx     print context
-  wgo        resume work           wlint    fix linters
-  wlean      slim the diff         wreview  review a PR (wreview 12)
-  wship      lint + commit + PR
-MSG
+echo "Open a new shell, then run wf-help:"
+echo
+cat "$W/help.txt"
