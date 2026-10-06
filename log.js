@@ -12,6 +12,7 @@ const MAX_FIND = 12; // hard cap on research findings kept
 const sh = (c) => { try { return execSync(c, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }); } catch { return ''; } };
 
 const home = path.join(os.homedir(), '.claude', 'workflow');
+fs.mkdirSync(home, { recursive: true });
 const detected = process.env.CLAUDE_PROJECT_DIR || sh('git rev-parse --show-toplevel').trim();
 let root, base, file;
 const use = (r) => { root = r; base = path.join(home, r.replace(/[\\/:]/g, '-')); file = base + '.md'; };
@@ -32,15 +33,12 @@ function update(msg) {
   if (msg) { const d = new Date(), z = (n) => String(n).padStart(2, '0'); old.push(`- ${z(d.getMonth() + 1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())} ${msg}`); }
   const text = [`# Context: ${root} (~${MAX_LOG + MAX_WIN + 3} lines max)`, `## Open now (${new Date().toLocaleString("sv").slice(0, 16)}, ${os.hostname()})`,
     ...windows().map((w) => '- ' + w), '## Log', ...old.slice(-MAX_LOG)].join('\n') + '\n';
-  fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, text);
-  board();
   return text;
 }
 
 const read = (k) => { try { return JSON.parse(fs.readFileSync(`${base}.${k}.json`, 'utf8')); } catch { return []; } };
 function add(k, item, max) { // append to a capped list, then refresh the board
-  fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(`${base}.${k}.json`, JSON.stringify(read(k).concat({ t: new Date().toLocaleString('sv').slice(5, 16), ...item }).slice(-max)));
   board();
 }
@@ -50,7 +48,6 @@ const find = (name, what = '', url = '', take = '') => add('research', { name, w
 
 // Static page + data file. The page polls the data file (no reload), so scroll, pane size and expanded items survive.
 function board() {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(base + '.board.js', 'window.BOARD=' + JSON.stringify({ name: path.basename(root), decisions: read('decisions'), reviews: read('reviews'), research: read('research') }));
   fs.writeFileSync(base + '.html', PAGE.replace('DATA.JS', path.basename(base) + '.board.js'));
 }
@@ -70,7 +67,7 @@ let last='';const v=new URLSearchParams(location.search).get('view')||'board';do
 function draw(b){const k=JSON.stringify(b);if(k===last)return;last=k;document.title=b.name+' '+v;
 const open=new Set([...document.querySelectorAll('details[open]')].map(x=>x.id));
 d.innerHTML='<h2>Decisions</h2>'+([...b.decisions].reverse().map(x=>'<div class=i><b>'+e(x.what)+'</b><span class=t>'+e(x.t)+'</span>'+(x.benefit?'<p class=g>+ '+e(x.benefit)+'</p>':'')+(x.cost?'<p class=r>&minus; '+e(x.cost)+'</p>':'')+'</div>').join('')||'<p class=s>None yet</p>');
-r.innerHTML='<h2>Review</h2>'+([...b.reviews].reverse().map((x,n)=>{const id='r'+x.t+x.ref;return '<details class=i id="'+e(id)+'"'+(open.has(id)?' open':'')+'><summary><b>'+e(x.ref)+'</b><span class=t>'+e(x.t)+'</span><p>'+e(x.tldr)+'</p></summary>'+(x.flag?'<p class=r>'+e(x.flag)+'</p>':'<p class=g>No flags</p>')+'</details>'}).join('')||'<p class=s>None yet</p>');
+r.innerHTML='<h2>Review</h2>'+([...b.reviews].reverse().map(x=>{const id='r'+x.t+x.ref;return '<details class=i id="'+e(id)+'"'+(open.has(id)?' open':'')+'><summary><b>'+e(x.ref)+'</b><span class=t>'+e(x.t)+'</span><p>'+e(x.tldr)+'</p></summary>'+(x.flag?'<p class=r>'+e(x.flag)+'</p>':'<p class=g>No flags</p>')+'</details>'}).join('')||'<p class=s>None yet</p>');
 x.innerHTML='<h2>Research</h2>'+([...(b.research||[])].reverse().map(f=>{const n='<b>'+e(f.name)+'</b>';return '<div class=i>'+(/^https?:[/][/]/.test(f.url)?'<a href="'+e(f.url)+'" target=_blank rel=noopener>'+n+'</a>':n)+'<p>'+e(f.what)+'</p>'+(f.take?'<p class=s>&rarr; '+e(f.take)+'</p>':'')+'</div>'}).join('')||'<p class=s>None yet</p>');}
 function poll(){const s=document.createElement('script');s.src='DATA.JS?'+Date.now();s.onload=()=>{draw(window.BOARD);s.remove()};s.onerror=()=>s.remove();document.head.append(s)}
 poll();setInterval(poll,3000);
