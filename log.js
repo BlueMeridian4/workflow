@@ -1,14 +1,14 @@
 #!/usr/bin/env node
-// Usage: log.js "what changed" | log.js (refresh snapshot) | log.js --path | log.js --session (hook: refresh + print)
+// Usage: log.js "what changed" | log.js (refresh snapshot) | log.js --session (hook: refresh + print)
 // Context lives outside the repo (~/.claude/workflow/<project>.md): per-project, never committed.
 const fs = require('fs'), os = require('os'), path = require('path');
 const { execSync } = require('child_process');
-const MAX_LOG = +process.env.MAX_LOG || 20; // hard cap on log entries; oldest dropped
-const MAX_WIN = +process.env.MAX_WIN || 15; // hard cap on windows listed
+const MAX_LOG = 20; // hard cap on log entries; oldest dropped
+const MAX_WIN = 15; // hard cap on windows listed
 const sh = (c) => { try { return execSync(c, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }); } catch { return ''; } };
 
 const root = process.env.CLAUDE_PROJECT_DIR || sh('git rev-parse --show-toplevel').trim() || process.cwd();
-const file = process.env.CONTEXT || path.join(os.homedir(), '.claude', 'workflow', root.replace(/[\\/:]/g, '-') + '.md');
+const file = path.join(os.homedir(), '.claude', 'workflow', root.replace(/[\\/:]/g, '-') + '.md');
 
 // ponytail: window titles only (active browser tab, not all tabs); Mac/Windows commands untested
 function windows() {
@@ -31,6 +31,5 @@ function update(msg) {
 }
 
 const a = process.argv[2];
-if (a === '--path') console.log(file);
-else if (a === '--session') console.log(`## workflow context for this project (auto-loaded; do not hand-edit)\n${update()}Rule: after each meaningful change/iteration, run \`node "${__filename}" "<one-line summary, <100 chars>"\`.`);
+if (a === '--session') console.log(`## workflow context for this project (auto-loaded; do not hand-edit)\n${update()}Rule: after each meaningful change/iteration, run \`node "${__filename}" "<one-line summary, <100 chars>"\`.`);
 else update(a);
