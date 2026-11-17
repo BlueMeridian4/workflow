@@ -86,7 +86,8 @@ function open(argv) {
   }
   board();
   const page = `file://${base}.html?view=${view}`, w = process.platform === 'win32';
-  const chrome = ['google-chrome', 'chromium', 'chromium-browser'].find((c) => sh(`command -v ${c}`).trim());
+  // Mac apps aren't on PATH; running the bundle binary hands off to an already-open Chrome and still gets an app window.
+  const chrome = ['google-chrome', 'chromium', 'chromium-browser', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/Applications/Chromium.app/Contents/MacOS/Chromium'].find((c) => sh(`command -v ${JSON.stringify(c)}`).trim());
   const [cmd, args] = chrome ? [chrome, [`--app=${page}`, '--window-size=420,700']]
     : w ? ['cmd', ['/c', 'start', '', page]] : [process.platform === 'darwin' ? 'open' : 'xdg-open', [page]];
   spawn(cmd, args, { detached: true, stdio: 'ignore' }).unref();
