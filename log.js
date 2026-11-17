@@ -77,6 +77,7 @@ poll();setInterval(poll,3000);
 
 function open(argv) {
   const view = argv.includes("--research") ? 'research' : 'board', arg = argv.find((x) => !x.startsWith('--'));
+  if (arg && !fs.existsSync(arg)) { console.error(`wf: no such folder: ${arg}`); process.exit(1); }
   if (arg) { const r = path.resolve(arg); use(sh(`git -C ${JSON.stringify(r)} rev-parse --show-toplevel`).trim() || r); }
   else if (!detected) { // not in a project: fall back to the most recently updated one
     try {
