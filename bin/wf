@@ -16,7 +16,7 @@ const interactive = ['go', 'lint', 'lean', 'ship']; // change files or push: ope
 const [cmd = 'help', ...args] = process.argv.slice(2);
 const run = (c, a) => process.exit(spawnSync(c, a, { stdio: 'inherit', shell: win }).status ?? 1);
 const help = () => process.stdout.write(fs.readFileSync(path.join(root, 'help.txt'), 'utf8'));
-const prompt = (c, a) => `/workflow:${c} ${a.join(' ')}`.trim();
+const prompt = (c, a) => `/wf:${c} ${a.join(' ')}`.trim();
 const where = (c) => spawnSync(win ? 'where' : 'which', [c], { encoding: 'utf8' }).stdout?.split('\n')[0].trim();
 const q = (s) => `'${s.replace(/'/g, `'\\''`)}'`;
 

@@ -1,5 +1,5 @@
 # Rules
-Project rules that /workflow:plan and reviews check against. Keep short; one line each. Delete what doesn't apply.
+Project rules that /wf:plan and reviews check against. Keep short; one line each. Delete what doesn't apply.
 
 ## Code
 - <conventions the linters can't enforce: naming, type-hint style, error handling>
