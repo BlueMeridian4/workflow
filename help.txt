@@ -18,5 +18,5 @@ wf <command> [args]   (extra words are passed to Claude commands)
 
 [background] runs with no window: results go to the board or ~/.claude/workflow/last-<cmd>.log, and you get a desktop notification.
 Your terminal stays free either way.
-Inside Claude Code the same tasks are /workflow:go, :plan, :lint, :lean, :review, :ship.
+Inside Claude Code type /wf to list them all: /wf:board, /wf:go, /wf:ship, ...
 Update: git -C ~/.workflow pull

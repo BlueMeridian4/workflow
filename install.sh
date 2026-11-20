@@ -14,7 +14,8 @@ done
 
 if command -v claude >/dev/null; then
   claude plugin marketplace add BlueMeridian4/workflow >/dev/null 2>&1 || true
-  claude plugin install workflow@workflow >/dev/null 2>&1 || echo "note: run /plugin install workflow@workflow inside Claude Code"
+  claude plugin uninstall workflow@workflow >/dev/null 2>&1 || true # renamed to wf in 0.2.0
+  claude plugin install wf@workflow >/dev/null 2>&1 || echo "note: run /plugin install wf@workflow inside Claude Code"
 else
   echo "note: Claude Code not found; the aliases wl/wctx still work with any AI tool"
 fi
